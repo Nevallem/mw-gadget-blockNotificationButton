@@ -3,7 +3,7 @@
  *
  * @author [[pt:User:!Silent]]
  * @date 13/apr/2012
- * @updated 17/apr/2021
+ * @updated 18/apr/2021
  */
 /* global $, mw */
 /* jshint laxbreak:true, esversion:6 */
@@ -13,31 +13,31 @@
 
 mw.messages.set( {
 	// General
-	'bbn-buttonText': 'Enviar uma notificação de bloqueio',
-	'bbn-checkingBlockRegister': 'Consultando os registros de bloqueio do usuário...',
-	'bbn-editUserDiscussion': 'Editando a página de discussão do usuário...',
-	'bbn-sectionTitle': 'Notificação de bloqueio',
-	'bbn-success': 'Mensagem de bloqueio enviada com sucesso (<a href="$1#Notifica.C3.A7.C3.A3o_de_bloqueio">Abrir</a>).',
-	'bbn-successBlock': 'Bloqueio bem sucedido',
+	'bnb-buttonText': 'Enviar uma notificação de bloqueio',
+	'bnb-checkingBlockRegister': 'Consultando os registros de bloqueio do usuário...',
+	'bnb-editUserDiscussion': 'Editando a página de discussão do usuário...',
+	'bnb-sectionTitle': 'Notificação de bloqueio',
+	'bnb-success': 'Mensagem de bloqueio enviada com sucesso (<a href="$1#Notifica.C3.A7.C3.A3o_de_bloqueio">Abrir</a>).',
+	'bnb-successBlock': 'Bloqueio bem sucedido',
 
 	// Errors
-	'bbn-apiError': 'Erro: a API retornou o código de erro "$1": $2',
-	'bbn-unknownError': 'Erro: resultado desconhecido da API.',
-	'bbn-requestFail': 'Erro: a requisão falhou.',
+	'bnb-apiError': 'Erro: a API retornou o código de erro "$1": $2',
+	'bnb-unknownError': 'Erro: resultado desconhecido da API.',
+	'bnb-requestFail': 'Erro: a requisão falhou.',
 } );
 
 // Messages
 // @param {string} name Name of the message
 // @param {string|number} [$N] Dynamic parameters to the message (i.e. values for $1, $2, etc)
 // @return {string}
-function message( /*name[, $1[, $2[, ... ]]]*/ ) {
+function bnb_message( /*name[, $1[, $2[, ... ]]]*/ ) {
 	return mw.message.apply( undefined, arguments ).plain();
 }
 
 // Translates to portuguese the block duration
 // @param {string} duration Block duration
 // @return {string}
-function bbn_translateDuration( duration ) {
+function bnb_translateDuration( duration ) {
 	let translation;
 
 	duration = duration.split( ' ' );
@@ -67,11 +67,11 @@ function bbn_translateDuration( duration ) {
 
 // Send the notify
 // @return {undefined}
-function bbn_sendNotify() {
+function bnb_sendNotify() {
 	let logevents,
 		userNameBlocked = $( '#mw-content-text' ).find( 'a' ).html();
 
-	mw.notify( message( 'bbn-checkingBlockRegister' ) );
+	mw.notify( bnb_message( 'bnb-checkingBlockRegister' ) );
 
 	$.getJSON( mw.util.wikiScript( 'api' ), {
 		action: 'query',
@@ -84,54 +84,54 @@ function bbn_sendNotify() {
 	} ).done( function ( data ) {
 		logevents = data.query.logevents[ 0 ];
 
-		mw.notify( message( 'bbn-editUserDiscussion' ) );
+		mw.notify( bnb_message( 'bnb-editUserDiscussion' ) );
 
 		( new mw.Api() ).editPage( {
 			title: 'User talk:' + userNameBlocked,
 			section: 'new',
 			watchlist: 'preferences',
-			sectiontitle: message( 'bbn-sectionTitle' ),
+			sectiontitle: bnb_message( 'bnb-sectionTitle' ),
 			tags:'blockNotificationButton',
 			text: '{{subst:Bloqueado' + ( !!logevents.params.restrictions
 					? ' parcial'
 					: ( ( logevents.params.flags.indexOf( 'nousertalk' ) === -1 ) ? '-disc' : '' )
-				) + '|1=' + bbn_translateDuration( logevents.params.duration ) + '|2=' + logevents.comment + '.}} \~\~\~\~',
-			summary: message( 'bbn-sectionTitle' ),
+				) + '|1=' + bnb_translateDuration( logevents.params.duration ) + '|2=' + logevents.comment + '.}} \~\~\~\~',
+			summary: bnb_message( 'bnb-sectionTitle' ),
 			done: {
 				success: function () {
-					mw.notify( $.parseHTML( message( 'bbn-success', mw.util.getUrl( 'User talk:' + userNameBlocked ) ) ) );
+					mw.notify( $.parseHTML( bnb_message( 'bnb-success', mw.util.getUrl( 'User talk:' + userNameBlocked ) ) ) );
 				},
 				apiError: function ( data ) {
-					mw.notify( message( 'bbn-apiError', data.code, data.info ) );
-					$( '#bbn-sendMsg' ).attr( 'disabled', 'false' );
+					mw.notify( bnb_message( 'bnb-apiError', data.code, data.info ) );
+					$( '#bnb-sendMsg' ).attr( 'disabled', 'false' );
 				},
 				unknownError: function () {
-					mw.notify( message( 'bbn-unknownError' ) );
-					$( '#bbn-sendMsg' ).attr( 'disabled', 'false' );
+					mw.notify( bnb_message( 'bnb-unknownError' ) );
+					$( '#bnb-sendMsg' ).attr( 'disabled', 'false' );
 				}
 			}
 		} ).fail( function () {
-			mw.notify( message( 'bbn-requestFail' ) );
-			$( '#bbn-sendMsg' ).attr( 'disabled', 'false' );
+			mw.notify( bnb_message( 'bnb-requestFail' ) );
+			$( '#bnb-sendMsg' ).attr( 'disabled', 'false' );
 		} );
 	} );
 }
 
 // Run the gadget
 // @return {undefined}
-function bbn_run() {
+function bnb_run() {
 	if ( !$( '.mw-htmlform-submit' ).length ) {
 		$( '#mw-content-text' ).append(
-			$( `<input type="button" class="mw-ui-button mw-ui-progressive" id="bbn-sendMsg" value="${ message( 'bbn-buttonText' ) }" />` ).on( 'click', function () {
-				bbn_sendNotify();
+			$( `<input type="button" class="mw-ui-button mw-ui-progressive" id="bnb-sendMsg" value="${ bnb_message( 'bnb-buttonText' ) }" />` ).on( 'click', function () {
+				bnb_sendNotify();
 				$( this ).attr( 'disabled', 'true' );
 			} )
 		);
 	}
 }
-  
+
 if ( mw.config.get( 'wgCanonicalSpecialPageName' ) === 'Block' ) {
-	$( bbn_run );
+	$( bnb_run );
 }
 
 }() );
