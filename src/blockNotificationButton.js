@@ -95,7 +95,7 @@ function bnb_sendNotify() {
 			text: '{{subst:Bloqueado' + ( !!logevents.params.restrictions
 					? ' parcial'
 					: ( ( logevents.params.flags.indexOf( 'nousertalk' ) === -1 ) ? '-disc' : '' )
-				) + '|1=' + bnb_translateDuration( logevents.params.duration ) + '|2=' + logevents.comment + '.}} ~~' + String.fromCharCode(126) + '~',
+				) + '|1=' + bnb_translateDuration( logevents.params.duration ) + '|2=' + logevents.comment + '.}} ~~' + String.fromCharCode( 126 ) + '~',
 			summary: bnb_message( 'bnb-sectionTitle' ),
 			done: {
 				success: function () {
