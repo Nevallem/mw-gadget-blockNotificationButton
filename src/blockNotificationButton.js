@@ -1,12 +1,13 @@
 /**
- * Adds a button to notify a user after blocking
+ * Block Notification Button
  *
+ * @desc Adds a button to notify a user after blocking
  * @author [[pt:User:!Silent]]
  * @date 13/apr/2012
- * @updated 18/apr/2021
+ * @updated 25/jul/2021
  */
-/* global $, mw */
-/* jshint laxbreak:true, esversion:6 */
+/* jshint laxbreak: true, esversion: 8 */
+/* global $, mw, URLSearchParams */
 
 ( function () {
 'use strict';
@@ -42,9 +43,8 @@ function bnb_translateDuration( duration ) {
 
 	duration = duration.split( ' ' );
 
-	if ( duration[ 0 ].search( /in(?:de)?finit[ey]/ ) !== -1 ) {
+	if ( duration[ 0 ].search( /in(?:de)?finit[ey]/ ) !== -1 )
 		return 'tempo indeterminado';
-	}
 
 	translation = {
 		'second': 'segundo',
@@ -56,9 +56,8 @@ function bnb_translateDuration( duration ) {
 		'year': 'ano'
 	};
 
-	if ( duration[ 0 ] !== '1' ) {
+	if ( duration[ 0 ] !== '1' )
 		translation.month = 'meses';
-	}
 
 	return duration[ 0 ] + ' '
 		+ translation[ duration[ 1 ].replace( /s$/, '' ) ]
@@ -67,71 +66,70 @@ function bnb_translateDuration( duration ) {
 
 // Send the notify
 // @return {undefined}
-function bnb_sendNotify() {
-	let logevents,
+async function bnb_sendNotify() {
+	let logevents, requestResponse, requestData,
 		userNameBlocked = $( '#mw-content-text' ).find( 'a' ).html();
 
 	mw.notify( bnb_message( 'bnb-checkingBlockRegister' ) );
 
-	$.getJSON( mw.util.wikiScript( 'api' ), {
+	requestResponse = await fetch( mw.util.wikiScript( 'api' ) + '?' + new URLSearchParams( {
 		action: 'query',
 		list: 'logevents',
 		format: 'json',
 		leprop: 'title|user|timestamp|details|comment',
 		lelimit: '1',
 		leuser: mw.config.get( 'wgUserName' ),
-		letitle: 'User:' + userNameBlocked
-	} ).done( function ( data ) {
-		logevents = data.query.logevents[ 0 ];
+		letitle: `User:${ userNameBlocked }`
+	} ) );
 
-		mw.notify( bnb_message( 'bnb-editUserDiscussion' ) );
+	requestData = await requestResponse.json();
+	logevents = requestData.query.logevents[ 0 ];
+	mw.notify( bnb_message( 'bnb-editUserDiscussion' ) );
 
-		( new mw.Api() ).editPage( {
-			title: 'User talk:' + userNameBlocked,
-			section: 'new',
-			watchlist: 'preferences',
-			sectiontitle: bnb_message( 'bnb-sectionTitle' ),
-			tags:'blockNotificationButton',
-			text: '{{subst:Bloqueado' + ( !!logevents.params.restrictions
-					? ' parcial'
-					: ( ( logevents.params.flags.indexOf( 'nousertalk' ) === -1 ) ? '-disc' : '' )
-				) + '|1=' + bnb_translateDuration( logevents.params.duration ) + '|2=' + logevents.comment + '.}} ~~' + String.fromCharCode( 126 ) + '~',
-			summary: bnb_message( 'bnb-sectionTitle' ),
-			done: {
-				success: function () {
-					mw.notify( $.parseHTML( bnb_message( 'bnb-success', mw.util.getUrl( 'User talk:' + userNameBlocked ) ) ) );
-				},
-				apiError: function ( data ) {
-					mw.notify( bnb_message( 'bnb-apiError', data.code, data.info ) );
-					$( '#bnb-sendMsg' ).attr( 'disabled', 'false' );
-				},
-				unknownError: function () {
-					mw.notify( bnb_message( 'bnb-unknownError' ) );
-					$( '#bnb-sendMsg' ).attr( 'disabled', 'false' );
-				}
+	( new mw.Api() ).editPage( {
+		title: `User talk:${ userNameBlocked }`,
+		section: 'new',
+		watchlist: 'preferences',
+		sectiontitle: bnb_message( 'bnb-sectionTitle' ),
+		tags:'blockNotificationButton',
+		text: `{{subst:Bloqueado${ ( !!logevents.params.restrictions
+				? ' parcial'
+				: ( ( logevents.params.flags.indexOf( 'nousertalk' ) === -1 ) ? '-disc' : '' )
+			) }|1=${ bnb_translateDuration( logevents.params.duration ) }|2=${ logevents.comment }.}} ~~~~`,
+		summary: bnb_message( 'bnb-sectionTitle' ),
+		done: {
+			success: () => {
+				mw.notify( $.parseHTML( bnb_message( 'bnb-success', mw.util.getUrl( 'User talk:' + userNameBlocked ) ) ) );
+			},
+			apiError: ( data ) => {
+				mw.notify( bnb_message( 'bnb-apiError', data.code, data.info ) );
+				$( '#bnb-sendMsg' ).attr( 'disabled', 'false' );
+			},
+			unknownError: () => {
+				mw.notify( bnb_message( 'bnb-unknownError' ) );
+				$( '#bnb-sendMsg' ).attr( 'disabled', 'false' );
 			}
-		} ).fail( function () {
-			mw.notify( bnb_message( 'bnb-requestFail' ) );
-			$( '#bnb-sendMsg' ).attr( 'disabled', 'false' );
-		} );
+		}
+	} ).fail( () => {
+		mw.notify( bnb_message( 'bnb-requestFail' ) );
+		$( '#bnb-sendMsg' ).attr( 'disabled', 'false' );
 	} );
 }
 
 // Run the gadget
 // @return {undefined}
 function bnb_run() {
-	if ( !$( '.mw-htmlform-submit' ).length ) {
+	if ( !$( '.mw-htmlform-submit' ).length )
 		$( '#mw-content-text' ).append(
-			$( `<input type="button" class="mw-ui-button mw-ui-progressive" id="bnb-sendMsg" value="${ bnb_message( 'bnb-buttonText' ) }" />` ).on( 'click', function () {
-				bnb_sendNotify();
-				$( this ).attr( 'disabled', 'true' );
-			} )
-		);
-	}
+			$( `<input type="button" class="mw-ui-button mw-ui-progressive" id="bnb-sendMsg" value="${ bnb_message( 'bnb-buttonText' ) }" />` )
+				.on( 'click', function () {
+					bnb_sendNotify();
+					$( this ).attr( 'disabled', 'true' );
+				} )
+			);
 }
 
-if ( mw.config.get( 'wgCanonicalSpecialPageName' ) === 'Block' ) {
+if ( mw.config.get( 'wgCanonicalSpecialPageName' ) === 'Block' )
 	$( bnb_run );
-}
 
 }() );
