@@ -12,7 +12,7 @@
 'use strict';
 
 if ( mw.config.get( 'wgCanonicalSpecialPageName' ) === 'Block' ) {
-	mw.loader.load( '//pt.wikipedia.org/w/index.php?title=MediaWiki:Gadget-blockNotificationsButton.js/core.js&action=raw&ctype=text/javascript' );
+	mw.loader.load( '//pt.wikipedia.org/w/index.php?title=MediaWiki:Gadget-blockNotificationButton.js/core.js&action=raw&ctype=text/javascript' );
 }
 
 }() );
